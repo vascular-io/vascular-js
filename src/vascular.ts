@@ -1,4 +1,4 @@
-import { DeleteMessageRequest, MessageReply } from "vascular/message_pb.d copy";
+import { DeleteMessageRequest, MessageReply } from "./vascular/message_pb";
 import {
   InboxClient,
   MessageClient,
@@ -17,11 +17,24 @@ import {
   ChangeMessagesStateRequest,
   AddTagsRequest,
   TagsReply,
-  TagData,
   GetUserTagsRequest,
   GetUserTagsReply,
   DeleteTagsRequest,
 } from "./vascular/index";
+
+type User = {
+  uuid: string;
+  createdAt: string;
+  metadata: string;
+};
+
+type Message = any;
+
+type Tag = {
+  uuid: string;
+  name: string;
+  createdAt: string;
+};
 
 export default class Vascular {
   private endpoint = "http://localhost:8080";
@@ -61,7 +74,7 @@ export default class Vascular {
     });
   }
 
-  getUser(userId?: string): Promise<GetUserReply> {
+  getUser(userId?: string): Promise<User> {
     const request = new GetUserRequest();
     request.setAppKey(this.appKey);
     request.setUserId(userId ?? this.userId);
@@ -70,13 +83,13 @@ export default class Vascular {
         if (err) {
           reject(err);
         } else {
-          resolve(response);
+          resolve(response.toObject());
         }
       });
     });
   }
 
-  inbox(): Promise<GetInboxMessagesReply> {
+  inbox(): Promise<Message[]> {
     const request = new GetInboxMessagesRequest();
     request.setAppKey(this.appKey);
     request.setUserId(this.userId);
@@ -94,14 +107,17 @@ export default class Vascular {
             const createdAt: string = response.getNext()?.getCreatedAt() || "";
             this.next?.setUuid(uuid);
             this.next?.setCreatedAt(createdAt);
-            resolve(response);
+            const messages = response
+              .getMessagesList()
+              .map((message) => this.mapMessage(message));
+            resolve(messages);
           }
         }
       );
     });
   }
 
-  inboxNext(): Promise<GetInboxMessagesReply> {
+  inboxNext(): Promise<Message[]> {
     const request = new GetInboxMessagesRequest();
     request.setAppKey(this.appKey);
     request.setUserId(this.userId);
@@ -119,14 +135,17 @@ export default class Vascular {
             const createdAt: string = response.getNext()?.getCreatedAt() || "";
             this.next?.setUuid(uuid);
             this.next?.setCreatedAt(createdAt);
-            resolve(response);
+            const messages = response
+              .getMessagesList()
+              .map((message) => this.mapMessage(message));
+            resolve(messages);
           }
         }
       );
     });
   }
 
-  getMessageById(messageId: string): Promise<InboxMessage> {
+  getMessageById(messageId: string): Promise<Message> {
     const request = new GetMessageByIdRequest();
     request.setAppKey(this.appKey);
     request.setUserId(this.userId);
@@ -138,7 +157,7 @@ export default class Vascular {
         null,
         (err, response: InboxMessage) => {
           if (err) reject(err);
-          resolve(response);
+          resolve(this.mapMessage(response));
         }
       );
     });
@@ -243,7 +262,7 @@ export default class Vascular {
     });
   }
 
-  tags(): Promise<TagData[]> {
+  tags(): Promise<Tag[]> {
     const request = new GetUserTagsRequest();
     request.setAppKey(this.appKey);
     request.setUserId(this.userId);
@@ -255,17 +274,71 @@ export default class Vascular {
           if (err) {
             reject(err);
           } else {
-            resolve(response.getTagsList());
+            resolve(response.getTagsList().map((tag) => tag.toObject()));
           }
         }
       );
     });
   }
 
-  private getTagUUID(
-    allTags: TagData[],
-    targetTag: string
-  ): string | undefined {
-    return allTags.find((tag) => tag.getName() === targetTag)?.getUuid();
+  private getTagUUID(allTags: Tag[], targetTag: string): string | undefined {
+    return allTags.find((tag) => tag.name === targetTag)?.uuid;
+  }
+
+  private mapMessage(inboxMessage: InboxMessage) {
+    const self = this;
+    let messagesMap = {};
+    const msg = inboxMessage.getMessageMap();
+    const languages = [1, 0, 2];
+    languages.map((lang) => {
+      let langEnum = "enUs";
+      if (lang === 1) {
+        langEnum = "enUk";
+      } else if (lang === 2) {
+        langEnum = "nb";
+      }
+
+      const data = msg.get(langEnum);
+      if (!data) {
+        return false; // skip
+      }
+      messagesMap = Object.assign(
+        {
+          [lang]: {
+            title: data.getTitle(),
+            subTitle: data.getSubTitle(),
+            body: data.getBody(),
+            media: {
+              image: data.getMedia()?.getImage,
+              thumbnail: data.getMedia()?.getThumbnail,
+            },
+            actions: self.getMessageActions(data.getActionsList()),
+          },
+        },
+        messagesMap
+      );
+    });
+
+    return {
+      uuid: inboxMessage.getUuid(),
+      status: inboxMessage.getStatus(),
+      provider: inboxMessage.getProvider(),
+      created_at: inboxMessage.getCreatedAt(),
+      expdate: inboxMessage.getExpdate(),
+      type: inboxMessage.getType(),
+      messageData: messagesMap,
+    };
+  }
+
+  private getMessageActions(actions: any[]) {
+    const actionsList: { name: string; value: string }[] = [];
+    actions.map((action) => {
+      actionsList.push({
+        name: action.getName(),
+        value: action.getValue(),
+      });
+    });
+
+    return actionsList;
   }
 }
