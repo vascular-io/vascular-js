@@ -1,4 +1,3 @@
-import { DeleteMessageRequest, MessageReply } from "./vascular/message_pb";
 import {
   InboxClient,
   MessageClient,
@@ -20,6 +19,8 @@ import {
   GetUserTagsRequest,
   GetUserTagsReply,
   DeleteTagsRequest,
+  DeleteMessageRequest,
+  MessageReply,
 } from "./vascular/index";
 
 type User = {
