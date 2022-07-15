@@ -38,7 +38,7 @@ type Tag = {
 };
 
 export default class Vascular {
-  private endpoint = "http://localhost:8080";
+  private endpoint = "http://api.vascular.io:8080";
   private inboxClient: InboxClient;
   private messageClient: MessageClient;
   private userClient: UserClient;

@@ -3,5 +3,3 @@ dist
 sdk
 test.ts
 src/vascular
-src/definitions.ts
-src/helpers.ts

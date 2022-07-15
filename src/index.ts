@@ -1,5 +1,5 @@
 export { default } from "./vascular";
-export * from "./vascular";
+
 export { Language, SFMC, Provider, Type } from "./vascular/index";
 
 export {

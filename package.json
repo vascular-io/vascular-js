@@ -1,8 +1,12 @@
 {
-  "name": "vascular-web",
-  "version": "0.0.1",
+  "name": "vascular-js",
+  "version": "0.0.2",
   "description": "Vascular Javascript SDK",
   "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
   "repository": "git@github.com:vascular-io/vascular-js.git",
   "author": "Vascular IO",
   "license": "Apache",
