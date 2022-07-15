@@ -2,3 +2,8 @@
 
 - Get Inobx API.
 - GEt Message by Id API.
+
+## [0.0.2] - 15 Jul 2022.
+
+- All APIs
+
