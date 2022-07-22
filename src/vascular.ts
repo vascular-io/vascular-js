@@ -43,7 +43,7 @@ export default class Vascular {
   private messageClient: MessageClient;
   private userClient: UserClient;
   private tagClient: TagClient;
-  private next?: Next;
+  private next: Next; 
 
   constructor(
     private appKey: string,
@@ -54,6 +54,7 @@ export default class Vascular {
     this.messageClient = new MessageClient(this.endpoint, null, null);
     this.userClient = new UserClient(this.endpoint, null, null);
     this.tagClient = new TagClient(this.endpoint, null, null);
+    this.next = new Next;
   }
 
   createUser(userId?: string): Promise<CreateUserReply> {
@@ -66,7 +67,7 @@ export default class Vascular {
         null,
         (err, response: CreateUserReply) => {
           if (err) {
-            reject(err);
+            reject(err.message);
           } else {
             resolve(response);
           }
@@ -82,7 +83,7 @@ export default class Vascular {
     return new Promise((resolve, reject) => {
       this.userClient.getUser(request, null, (err, response: GetUserReply) => {
         if (err) {
-          reject(err);
+          reject(err.message);
         } else {
           resolve(response.toObject());
         }
@@ -102,12 +103,12 @@ export default class Vascular {
         null,
         (err, response: GetInboxMessagesReply) => {
           if (err) {
-            reject(err);
+            reject(err.message);
           } else {
             const uuid: string = response.getNext()?.getUuid() || "";
             const createdAt: string = response.getNext()?.getCreatedAt() || "";
-            this.next?.setUuid(uuid);
-            this.next?.setCreatedAt(createdAt);
+            this.next.setUuid(uuid);
+            this.next.setCreatedAt(createdAt);
             const messages = response
               .getMessagesList()
               .map((message) => this.mapMessage(message));
@@ -130,12 +131,12 @@ export default class Vascular {
         null,
         (err, response: GetInboxMessagesReply) => {
           if (err) {
-            reject(err);
+            reject(err.message);
           } else {
             const uuid: string = response.getNext()?.getUuid() || "";
             const createdAt: string = response.getNext()?.getCreatedAt() || "";
-            this.next?.setUuid(uuid);
-            this.next?.setCreatedAt(createdAt);
+            this.next.setUuid(uuid);
+            this.next.setCreatedAt(createdAt);
             const messages = response
               .getMessagesList()
               .map((message) => this.mapMessage(message));
@@ -157,7 +158,7 @@ export default class Vascular {
         request,
         null,
         (err, response: InboxMessage) => {
-          if (err) reject(err);
+          if (err) reject(err.message);
           resolve(this.mapMessage(response));
         }
       );
@@ -175,7 +176,7 @@ export default class Vascular {
         null,
         (err, response: MessageReply) => {
           if (err) {
-            reject(err);
+            reject(err.message);
           } else {
             resolve(response.getStatus());
           }
@@ -195,7 +196,7 @@ export default class Vascular {
         null,
         (err, response: MessageReply) => {
           if (err) {
-            reject(err);
+            reject(err.message);
           } else {
             resolve(response.getStatus());
           }
@@ -215,7 +216,7 @@ export default class Vascular {
         null,
         (err, response: MessageReply) => {
           if (err) {
-            reject(err);
+            reject(err.message);
           } else {
             resolve(response.getStatus());
           }
@@ -232,7 +233,7 @@ export default class Vascular {
     return new Promise((resolve, reject) => {
       this.tagClient.addTags(request, null, (err, response: TagsReply) => {
         if (err) {
-          reject(err);
+          reject(err.message);
         } else {
           resolve(response.getStatus());
         }
@@ -255,7 +256,7 @@ export default class Vascular {
     return new Promise((resolve, reject) => {
       this.tagClient.deleteTags(request, null, (err, response: TagsReply) => {
         if (err) {
-          reject(err);
+          reject(err.message);
         } else {
           resolve(response.getStatus());
         }
@@ -273,7 +274,7 @@ export default class Vascular {
         null,
         (err, response: GetUserTagsReply) => {
           if (err) {
-            reject(err);
+            reject(err.message);
           } else {
             resolve(response.getTagsList().map((tag) => tag.toObject()));
           }
