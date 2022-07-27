@@ -311,8 +311,8 @@ export default class Vascular {
             subTitle: data.getSubTitle(),
             body: data.getBody(),
             media: {
-              image: data.getMedia()?.getImage,
-              thumbnail: data.getMedia()?.getThumbnail,
+              image: data.getMedia()?.getImage(),
+              thumbnail: data.getMedia()?.getThumbnail(),
             },
             actions: self.getMessageActions(data.getActionsList()),
           },
