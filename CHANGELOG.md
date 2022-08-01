@@ -15,3 +15,7 @@
 
 - Fix inboxNext.
 - Return clean error object.
+
+## [0.0.5] - 27 Jul 2022.
+
+- Fix message media parser.
