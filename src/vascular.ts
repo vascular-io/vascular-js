@@ -1,9 +1,9 @@
+import { Metadata } from 'grpc-web';
 import {
   InboxClient,
   MessageClient,
   UserClient,
   TagClient,
-  Next,
   Language,
   GetInboxMessagesReply,
   GetInboxMessagesRequest,
@@ -21,7 +21,12 @@ import {
   DeleteTagsRequest,
   DeleteMessageRequest,
   MessageReply,
+  Provider,
+  Type,
+  Status,
 } from "./vascular/index";
+
+import { Config } from "./definitions"
 
 type User = {
   uuid: string;
@@ -38,33 +43,48 @@ type Tag = {
 };
 
 export default class Vascular {
-  private endpoint = "https://api.vascular.io:8080";
-  private inboxClient: InboxClient;
-  private messageClient: MessageClient;
-  private userClient: UserClient;
-  private tagClient: TagClient;
-  private next: Next; 
+  private readonly apiKey: string;
+  private readonly appKey: string;
+  private readonly userId: string;
+  private readonly endpoint: string;
+  private readonly languages: Language[];
+  private readonly inboxClient: InboxClient;
+  private readonly messageClient: MessageClient;
+  private readonly userClient: UserClient;
+  private readonly tagClient: TagClient;
+  private next: string;
 
-  constructor(
-    private appKey: string,
-    private userId: string,
-    private languages: Language[]
-  ) {
+
+  constructor(config: Config) {
+    const { apiKey, appKey, userId, endpoint, languages } = config;
+    if (!apiKey || !appKey || !userId || !endpoint) {
+      throw new Error("apiKey, appKey, userId, and endpoint are required");
+    }
+    this.apiKey = apiKey;
+    this.appKey = appKey;
+    this.userId = userId;
+    this.endpoint = endpoint;
+    this.languages = languages && languages.length > 0 ? languages : [Language.ENUK];
+
     this.inboxClient = new InboxClient(this.endpoint, null, null);
     this.messageClient = new MessageClient(this.endpoint, null, null);
     this.userClient = new UserClient(this.endpoint, null, null);
     this.tagClient = new TagClient(this.endpoint, null, null);
-    this.next = new Next;
+    this.next = "";
   }
 
   createUser(userId?: string): Promise<CreateUserReply> {
     const request = new CreateUserRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
+
     request.setUserId(userId ?? this.userId);
     return new Promise((resolve, reject) => {
       this.userClient.createUser(
         request,
-        null,
+        metadata,
         (err, response: CreateUserReply) => {
           if (err) {
             reject(err.message);
@@ -78,10 +98,13 @@ export default class Vascular {
 
   getUser(userId?: string): Promise<User> {
     const request = new GetUserRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setUserId(userId ?? this.userId);
     return new Promise((resolve, reject) => {
-      this.userClient.getUser(request, null, (err, response: GetUserReply) => {
+      this.userClient.getUser(request, metadata, (err, response: GetUserReply) => {
         if (err) {
           reject(err.message);
         } else {
@@ -93,22 +116,22 @@ export default class Vascular {
 
   inbox(): Promise<Message[]> {
     const request = new GetInboxMessagesRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setUserId(this.userId);
-    request.setNext(undefined);
     request.setLangaugesList(this.languages);
     return new Promise((resolve, reject) => {
       this.inboxClient.getInboxMessages(
         request,
-        null,
+        metadata,
         (err, response: GetInboxMessagesReply) => {
           if (err) {
             reject(err.message);
           } else {
-            const uuid: string = response.getNext()?.getUuid() || "";
-            const createdAt: string = response.getNext()?.getCreatedAt() || "";
-            this.next.setUuid(uuid);
-            this.next.setCreatedAt(createdAt);
+            const next: string = response.getNext() || "";
+            this.next = next;
             const messages = response
               .getMessagesList()
               .map((message) => this.mapMessage(message));
@@ -121,22 +144,23 @@ export default class Vascular {
 
   inboxNext(): Promise<Message[]> {
     const request = new GetInboxMessagesRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setUserId(this.userId);
     request.setNext(this.next);
     request.setLangaugesList(this.languages);
     return new Promise((resolve, reject) => {
       this.inboxClient.getInboxMessages(
         request,
-        null,
+        metadata,
         (err, response: GetInboxMessagesReply) => {
           if (err) {
             reject(err.message);
           } else {
-            const uuid: string = response.getNext()?.getUuid() || "";
-            const createdAt: string = response.getNext()?.getCreatedAt() || "";
-            this.next.setUuid(uuid);
-            this.next.setCreatedAt(createdAt);
+            const next: string = response.getNext() || "";
+            this.next = next;
             const messages = response
               .getMessagesList()
               .map((message) => this.mapMessage(message));
@@ -149,14 +173,17 @@ export default class Vascular {
 
   getMessageById(messageId: string): Promise<Message> {
     const request = new GetMessageByIdRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setUserId(this.userId);
     request.setMessageId(messageId);
 
     return new Promise((resolve, reject) => {
       this.messageClient.getMessageById(
         request,
-        null,
+        metadata,
         (err, response: InboxMessage) => {
           if (err) reject(err.message);
           resolve(this.mapMessage(response));
@@ -167,13 +194,16 @@ export default class Vascular {
 
   readMessages(messageIds: string[]): Promise<string> {
     const request = new ChangeMessagesStateRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setIdsList(messageIds);
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
       this.messageClient.readMessages(
         request,
-        null,
+        metadata,
         (err, response: MessageReply) => {
           if (err) {
             reject(err.message);
@@ -187,13 +217,16 @@ export default class Vascular {
 
   openMessages(messageIds: string[]): Promise<string> {
     const request = new ChangeMessagesStateRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setIdsList(messageIds);
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
       this.messageClient.openMessages(
         request,
-        null,
+        metadata,
         (err, response: MessageReply) => {
           if (err) {
             reject(err.message);
@@ -207,13 +240,16 @@ export default class Vascular {
 
   deleteMessage(messageId: string): Promise<string> {
     const request = new DeleteMessageRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setMessageId(messageId);
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
       this.messageClient.deleteMessage(
         request,
-        null,
+        metadata,
         (err, response: MessageReply) => {
           if (err) {
             reject(err.message);
@@ -227,11 +263,14 @@ export default class Vascular {
 
   addTags(tagNames: string[]): Promise<string> {
     const request = new AddTagsRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setUserId(this.userId);
     request.setNamesList(tagNames);
     return new Promise((resolve, reject) => {
-      this.tagClient.addTags(request, null, (err, response: TagsReply) => {
+      this.tagClient.addTags(request, metadata, (err, response: TagsReply) => {
         if (err) {
           reject(err.message);
         } else {
@@ -250,11 +289,14 @@ export default class Vascular {
     if (uuids.length <= 0) return "Nothing to be deleted";
 
     const request = new DeleteTagsRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setUserId(this.userId);
     request.setUuidsList(uuids);
     return new Promise((resolve, reject) => {
-      this.tagClient.deleteTags(request, null, (err, response: TagsReply) => {
+      this.tagClient.deleteTags(request, metadata, (err, response: TagsReply) => {
         if (err) {
           reject(err.message);
         } else {
@@ -266,12 +308,15 @@ export default class Vascular {
 
   tags(): Promise<Tag[]> {
     const request = new GetUserTagsRequest();
-    request.setAppKey(this.appKey);
+    const metadata: Metadata = {
+      'app-key': this.appKey,
+      'api-key': this.apiKey
+    };
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
       this.tagClient.getUserTags(
         request,
-        null,
+        metadata,
         (err, response: GetUserTagsReply) => {
           if (err) {
             reject(err.message);
@@ -289,45 +334,78 @@ export default class Vascular {
 
   private mapMessage(inboxMessage: InboxMessage) {
     const self = this;
-    let messagesMap = {};
     const msg = inboxMessage.getMessageMap();
-    const languages = [1, 0, 2];
+
+    let messagesMap = {};
+    const languages = [0, 1, 2];
     languages.map((lang) => {
-      let langEnum = "enUs";
-      if (lang === 1) {
+      let langEnum = "";
+      if (lang === 0) {
+        langEnum = "enUs";
+      } else if (lang === 1) {
         langEnum = "enUk";
       } else if (lang === 2) {
         langEnum = "nb";
       }
 
+
       const data = msg.get(langEnum);
       if (!data) {
         return false; // skip
       }
+
+
+      const image = data.getMedia()?.getImage();
+      const thumbnail = data.getMedia()?.getThumbnail();
+      const media = (image !== undefined || thumbnail !== undefined)
+        ? { image, thumbnail }
+        : undefined;
+      
+      const subTitle = data.getSubTitle();
+
       messagesMap = Object.assign(
         {
-          [lang]: {
+          [langEnum]: {
             title: data.getTitle(),
-            subTitle: data.getSubTitle(),
+            ...(subTitle !== "" ? { subTitle } : {}),
             body: data.getBody(),
-            media: {
-              image: data.getMedia()?.getImage(),
-              thumbnail: data.getMedia()?.getThumbnail(),
-            },
-            actions: self.getMessageActions(data.getActionsList()),
+            ...(media !== undefined ? { media } : {}),
+            actions: data.getActionsList()?.length ? self.getMessageActions(data.getActionsList()) : []
           },
         },
         messagesMap
       );
     });
 
+
+    const providerValue = inboxMessage.getProvider();
+    const providerNameMap: Record<number, string> = {
+      [Provider.API]: 'api',
+      [Provider.DASHBOARD]: 'dashboard',
+      [Provider.SFMC]: 'sfmc',
+    };
+    const typeValue = inboxMessage.getType();
+    const typeNameMap: Record<number, string> = {
+      [Type.CAMPAIGN]: 'campaign',
+      [Type.INFO]: 'info',
+      [Type.NOTIFICATION]: 'notification',
+      [Type.PAYMENT]: 'payment',
+    };
+    const statusValue = inboxMessage.getStatus();
+    const statusNameMap: Record<number, string> = {
+      [Status.DELIVERED]: 'delivered',
+      [Status.OPENED]: 'opened',
+      [Status.READ]: 'read',
+      [Status.DELETED]: 'deleted',
+      [Status.ADMIN_DELETE]: 'admin_deleted',
+    };
     return {
       uuid: inboxMessage.getUuid(),
-      status: inboxMessage.getStatus(),
-      provider: inboxMessage.getProvider(),
+      status: statusNameMap[statusValue] ?? 'UNKNOWN',
+      provider: providerNameMap[providerValue] ?? 'UNKNOWN',
       created_at: inboxMessage.getCreatedAt(),
       expdate: inboxMessage.getExpdate(),
-      type: inboxMessage.getType(),
+      type: typeNameMap[typeValue] ?? 'UNKNOWN',
       messageData: messagesMap,
     };
   }

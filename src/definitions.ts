@@ -1,12 +1,21 @@
-import { MessageAction, MessageMedia } from "./vascular/index";
+import { Language } from "./vascular/index";
+
+export interface Config {
+  apiKey: string;
+  appKey: string;
+  userId: string;
+  endpoint: string;
+  languages?: Language[];
+}
 
 export interface IMessageData {
     title: string;
     body: string;
-    media: MessageMedia;
-    actions: MessageAction;
+    media: IMedia;
+    actions: IAction[];
     metadata: string;
-    sub_title: string;
+    subTitle: string;
+    language: string;
 }
 
 export interface IInboxMessage {

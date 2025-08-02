@@ -1,6 +1,6 @@
 export { default } from "./vascular";
 
-export { Language, SFMC, Provider, Type } from "./vascular/index";
+export { Language, SFMC, Provider, Type} from "./vascular/index";
 
 export {
   IMessageData as MessageData,

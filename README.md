@@ -19,7 +19,13 @@ yarn add vascular-js
 import Vascular, { Language } from 'vascular-js';
 
 // Construct new instance
-const vascular = new Vascular("APP_KEY", "USER_ID", [Language.enUk]);
+const vascular = new Vascular({
+  apiKey: "API_KEY", 
+  appKey: "APP_KEY", , 
+  userId: "USER_ID", 
+  endpoint: "http://my-vascular-server", 
+  languages: [Language.enUk]
+});
 
 // Create user
 const user = await vascular.createUser("USER_ID") // if USER_ID is not passed it will use "USER_ID" from constructor
