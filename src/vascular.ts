@@ -17,7 +17,6 @@ import {
   GetMessageByIdRequest,
   ChangeMessagesStateRequest,
   DeleteMessageRequest,
-  // Language,
   InboxMessage,
   MessageReply,
   Provider,
@@ -29,7 +28,6 @@ import {
   CreateUserReply,
 } from "./vascular/types/user";
 
-// import { Config } from "./definitions"
 
 type User = {
   uuid: string;
