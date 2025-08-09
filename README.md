@@ -5,18 +5,15 @@ The Vascular Js SDK allows using Vascular's APIs in Javascript based application
 ## Installation
 
 ```bash
-npm i -S vascular-js
+npm i -s @vascular-io/vascular-js
 ```
-Or
-```bash
-yarn add vascular-js
-```
+
 
 ## Usage
 
 ```ts
 // Import package
-import Vascular, { Language } from 'vascular-js';
+import Vascular, { Language } from '@vascular-io/vascular-js';
 
 // Construct new instance
 const vascular = new Vascular({
