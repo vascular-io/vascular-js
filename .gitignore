@@ -1,5 +1,7 @@
 node_modules
 dist
 sdk
-test.ts
+/test
 src/vascular
+local.sh
+vascular-io-*

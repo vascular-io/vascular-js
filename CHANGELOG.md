@@ -1,3 +1,6 @@
+## [1.0.2] - 02 May 2026
+
+- Resolve pkgs vulnerabilities
 
 ## [1.0.0] - 03 Aug 2025.
 
