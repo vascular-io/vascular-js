@@ -1,121 +1,357 @@
-# Vascular Javascript SDK
+# Vascular JavaScript SDK
 
-The Vascular Js SDK allows using Vascular's APIs in Javascript based applications.
+The Vascular JavaScript SDK is a client for Vascular APIs.
 
 ## Installation
 
-```bash
-npm i -s @vascular-io/vascular-js
+```sh
+npm install @vascular-io/vascular-js
 ```
 
+Import the SDK:
+
+```ts
+import Vascular, { Language } from '@vascular-io/vascular-js';
+```
+
+## Initialize
+
+Create a `Vascular` client with your API key, app key, user ID, endpoint, and optional languages:
+
+```ts
+const vascular = new Vascular({
+  apiKey: 'API_KEY',
+  appKey: 'APP_KEY',
+  userId: 'USER_ID',
+  endpoint: 'https://api.example.com',
+  languages: [Language.ENUK],
+});
+```
+
+If `languages` is not provided, the SDK defaults to `Language.ENUK`.
 
 ## Usage
 
+All network operations are asynchronous and should be awaited.
+
+### Create user
+
+Creates a user. If `userId` is not provided, the SDK uses the user ID passed to the constructor.
+
 ```ts
-// Import package
-import Vascular, { Language } from '@vascular-io/vascular-js';
+const createdUser = await vascular.createUser();
+const createdOtherUser = await vascular.createUser(otherUserId);
+```
 
-// Construct new instance
-const vascular = new Vascular({
-  apiKey: "API_KEY", 
-  appKey: "APP_KEY", , 
-  userId: "USER_ID", 
-  endpoint: "http://my-vascular-server", 
-  languages: [Language.enUk]
-});
+Returns:
 
-// Create user
-const user = await vascular.createUser("USER_ID") // if USER_ID is not passed it will use "USER_ID" from constructor
+```ts
+{
+  userId: STRING,
+  inboxId: STRING,
+  metadata: STRING,
+}
+```
 
-// Get user
-const user = await vascular.getUser("USER_ID") // if USER_ID is not passed it will use "USER_ID" from constructor
+### Get user
 
-// Inbox
-const inbox = await vascular.inbox();
+Fetches a user. If `userId` is not provided, the SDK uses the user ID passed to the constructor.
 
-// Next inbox (pagination)
-const inbox = await vascular.inboxNext();
+```ts
+const user = await vascular.getUser();
+const otherUser = await vascular.getUser(otherUserId);
+```
 
-// Get message by id
-const message = await vascular.getMessageById("MESSAGE_ID");
+Returns:
 
-// Read messages
-vascular.readMessages(inbox.newMessagesIds);
+```ts
+{
+  uuid: STRING,
+  createdAt: STRING,
+  metadata: STRING,
+}
+```
 
-// Open messages
-vascular.openMessages(inbox.readMessagesIds);
+### Inbox
 
-// Delete message by id
-vascular.deleteMessage(inbox.messages[0].uuid);
+Fetches the first inbox page.
 
-// Add tags
-vascular.addTags(["music", "sport"]);
+```ts
+const messages = await vascular.inbox();
+```
 
-// Delete tags
-vascular.deleteTags(["music", "sport"]);
+Returns:
 
-// List Tags
+```ts
+[
+  INBOX_MESSAGE
+]
+```
+
+### Next inbox page
+
+Fetches the next inbox page using the pagination state from the previous `inbox()` or `inboxNext()` call.
+
+```ts
+const messages = await vascular.inboxNext();
+```
+
+Returns:
+
+```ts
+[
+  INBOX_MESSAGE
+]
+```
+
+### Get message by ID
+
+Fetches one inbox message by ID.
+
+```ts
+const message = await vascular.getMessageById('MESSAGE_ID');
+```
+
+Returns:
+
+```ts
+{
+  uuid: STRING,
+  status: STATUS,
+  provider: PROVIDER,
+  created_at: TIMESTAMP,
+  expdate: TIMESTAMP,
+  type: TYPE,
+  messageData: {
+    enUs: MESSAGE_DATA,
+    enUk: MESSAGE_DATA,
+    nb: MESSAGE_DATA,
+  },
+}
+```
+
+### Read messages
+
+Marks the given message IDs as read.
+
+```ts
+const messageIds = ['message-id-1', 'message-id-2'];
+const status = await vascular.readMessages(messageIds);
+```
+
+Returns:
+
+```ts
+STRING
+```
+
+### Open messages
+
+Marks the given message IDs as opened.
+
+```ts
+const messageIds = ['message-id-1', 'message-id-2'];
+const status = await vascular.openMessages(messageIds);
+```
+
+Returns:
+
+```ts
+STRING
+```
+
+### Delete message
+
+Deletes one message.
+
+```ts
+const status = await vascular.deleteMessage('MESSAGE_ID');
+```
+
+Returns:
+
+```ts
+STRING
+```
+
+### Add tags
+
+Adds tags to the current user.
+
+```ts
+const status = await vascular.addTags(['music', 'sport']);
+```
+
+Returns:
+
+```ts
+STRING
+```
+
+### Delete tags
+
+Deletes matching tags from the current user. Tags that do not exist are ignored.
+
+```ts
+const status = await vascular.deleteTags(['music', 'sport']);
+```
+
+Returns:
+
+```ts
+STRING
+```
+
+When no matching tags exist, the SDK returns:
+
+```ts
+'Nothing to be deleted'
+```
+
+### List tags
+
+Lists tags for the current user.
+
+```ts
 const tags = await vascular.tags();
 ```
 
-###### Inbox data structure
+Returns:
+
+```ts
+[
+  {
+    uuid: STRING,
+    name: STRING,
+    createdAt: STRING,
+  }
+]
 ```
+
+### Multiple languages
+
+When you initialize the SDK with multiple languages, each inbox message can contain message data keyed by language name.
+
+```ts
+const vascular = new Vascular({
+  apiKey: 'API_KEY',
+  appKey: 'APP_KEY',
+  userId: 'USER_ID',
+  endpoint: 'https://api.example.com',
+  languages: [Language.ENUS, Language.NB],
+});
+
+const messages = await vascular.inbox();
+const message = messages[0];
+
+const englishMessage = message.messageData.enUs;
+console.log(englishMessage?.title);
+
+const norwegianMessage = message.messageData.nb;
+console.log(norwegianMessage?.title);
+```
+
+Returns:
+
+```ts
 {
-    messages: [INBOX-MESSAGE]
-    newMessagesIds: [STRING],
-    readMessagesIds: [STRING],
-    next: {
-      createdAt: TIMESTAMP
-      uuid: STRING
-    },
-    newInbox: INTEGER
+  title: STRING,
+  body: STRING,
+  media: {
+    thumbnail: STRING,
+    image: STRING,
+  },
+  actions: [
+    {
+      name: STRING,
+      value: STRING,
+    }
+  ],
+  subTitle: STRING,
 }
 ```
 
-###### Inbox message data structure
-```
+## Data Structures
+
+### Inbox message
+
+```ts
 {
-   "uuid": STRING,
-   "status": INTEGER,
-   "message":{
-      "enUs":{
-         "title": STRING,
-         "body": STRING,
-         "media":{
-            "thumbnail": STRING,
-            "image": STRING"
-         },
-         "actions":{
-            "name": STRING,
-            "value": STRING
-         },
-         "metadata":{
-            "meta": STRING
-         },
-         "subTitle": STRING
-         "language": LANGUAGE-ENUM
-      }
-   },
-   "provider": PROVIDER-ENUM,
-   "createdAt": STRING,
-   "expdate": STRING
+  uuid: STRING,
+  status: STATUS,
+  provider: PROVIDER,
+  created_at: TIMESTAMP,
+  expdate: TIMESTAMP,
+  type: TYPE,
+  messageData: {
+    enUs: MESSAGE_DATA,
+    enUk: MESSAGE_DATA,
+    nb: MESSAGE_DATA,
+  },
 }
 ```
 
-###### LANGUAGE-ENUM
-```
+### Message data
+
+```ts
 {
-    enUs
-    enUk
-    nb
+  title: STRING,
+  body: STRING,
+  media: {
+    thumbnail: STRING,
+    image: STRING,
+  },
+  actions: [
+    {
+      name: STRING,
+      value: STRING,
+    }
+  ],
+  subTitle: STRING,
 }
 ```
 
-###### PROVIDER-ENUM
+## Enums
+
+### `Language`
+
+```ts
+Language.ENUS
+Language.ENUK
+Language.NB
 ```
-{
-    api
-    sfmc
-    dashboard
-}
+
+Message data is keyed by:
+
+```ts
+enUs
+enUk
+nb
+```
+
+### `Provider`
+
+```ts
+api
+sfmc
+dashboard
+```
+
+### `Status`
+
+```ts
+delivered
+opened
+read
+deleted
+admin_deleted
+```
+
+### `Type`
+
+```ts
+info
+campaign
+payment
+notification
 ```

@@ -1,0 +1,71 @@
+name: Pull request
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  CONTRACTS_PATH: _contracts
+
+jobs:
+  validate:
+    if: github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout package
+        uses: actions/checkout@v6
+
+      - name: Checkout contracts
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ vars.CONTRACTS_REPOSITORY }}
+          token: ${{ secrets.CONTRACTS_REPO_TOKEN }}
+          path: ${{ env.CONTRACTS_PATH }}
+          ref: main
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+
+      - name: Generate grpc-web stubs
+        working-directory: ${{ env.CONTRACTS_PATH }}
+        env:
+          BUILDKIT_PROGRESS: quiet
+          DOCKER_BUILDKIT: '1'
+        run: |
+          test -f Taskfile.yml
+          task gen-web
+
+      - name: Copy generated web stubs into package
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="${CONTRACTS_PATH}/web"
+          dest="src/vascular"
+          test -d "$src"
+          mkdir -p "$dest"
+          rsync -a --delete "${src}/" "${dest}/"
+
+      - name: Remove contracts from runner
+        run: rm -rf "${CONTRACTS_PATH}"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish dry-run (npm)
+        run: npm publish --dry-run --access public
