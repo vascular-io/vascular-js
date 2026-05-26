@@ -43,6 +43,7 @@ jobs:
         run: |
           test -f Taskfile.yml
           task gen-web
+          task gen-web-types
 
       - name: Copy generated web stubs into package
         shell: bash
@@ -52,7 +53,12 @@ jobs:
           dest="src/vascular"
           test -d "$src"
           mkdir -p "$dest"
-          rsync -a --delete "${src}/" "${dest}/"
+          rsync -a --delete \
+            --include='*.ts' --include='*.js' --include='*.d.ts' \
+            --include='google/***' --include='types/***' \
+            --exclude='node_modules/***' \
+            "${src}/" "${dest}/"
+
 
       - name: Remove contracts from runner
         run: rm -rf "${CONTRACTS_PATH}"

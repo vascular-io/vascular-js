@@ -55,12 +55,6 @@ jobs:
             --include='google/***' --include='types/***' \
             --exclude='node_modules/***' \
             "${src}/" "${dest}/"
-          echo "--- src/vascular ---"
-          ls src/vascular
-          echo "--- src/vascular/types ---"
-          ls src/vascular/types
-          echo "--- src/vascular/google ---"
-          ls -R src/vascular/google
 
       - name: Remove contracts from runner
         run: rm -rf "${CONTRACTS_PATH}"
