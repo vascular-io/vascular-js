@@ -55,6 +55,7 @@ interface Config {
   userId: string;
   endpoint: string;
   languages?: Language[];
+  getSessionToken?: () => Promise<string>;
 }
 
 export default class Vascular {
@@ -67,11 +68,12 @@ export default class Vascular {
   private readonly messageClient: MessageClient;
   private readonly userClient: UserClient;
   private readonly tagClient: TagClient;
+  private readonly getSessionToken?: () => Promise<string>;
   private next: string;
 
 
   constructor(config: Config) {
-    const { apiKey, appKey, userId, endpoint, languages } = config;
+    const { apiKey, appKey, userId, endpoint, languages, getSessionToken } = config;
     if (!apiKey || !appKey || !userId || !endpoint) {
       throw new Error("apiKey, appKey, userId, and endpoint are required");
     }
@@ -80,6 +82,7 @@ export default class Vascular {
     this.userId = userId;
     this.endpoint = endpoint;
     this.languages = languages && languages.length > 0 ? languages : [Language.ENUK];
+    this.getSessionToken = getSessionToken;
 
     this.inboxClient = new InboxClient(this.endpoint, null, null);
     this.messageClient = new MessageClient(this.endpoint, null, null);
@@ -88,12 +91,20 @@ export default class Vascular {
     this.next = "";
   }
 
-  createUser(userId?: string): Promise<CreateUserReply> {
-    const request = new CreateUserRequest();
+  private async buildMetadata(): Promise<Metadata> {
     const metadata: Metadata = {
       'app-key': this.appKey,
-      'api-key': this.apiKey
+      'api-key': this.apiKey,
     };
+    if (this.getSessionToken) {
+      metadata['session-token'] = await this.getSessionToken();
+    }
+    return metadata;
+  }
+
+  async createUser(userId?: string): Promise<CreateUserReply> {
+    const request = new CreateUserRequest();
+    const metadata = await this.buildMetadata();
 
     request.setUserId(userId ?? this.userId);
     return new Promise((resolve, reject) => {
@@ -116,12 +127,9 @@ export default class Vascular {
     });
   }
 
-  getUser(userId?: string): Promise<User> {
+  async getUser(userId?: string): Promise<User> {
     const request = new GetUserRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setUserId(userId ?? this.userId);
     return new Promise((resolve, reject) => {
       this.userClient.getUser(request, metadata, (err, response: GetUserReply) => {
@@ -134,12 +142,9 @@ export default class Vascular {
     });
   }
 
-  inbox(): Promise<Message[]> {
+  async inbox(): Promise<Message[]> {
     const request = new GetInboxMessagesRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setUserId(this.userId);
     request.setLangaugesList(this.languages);
     return new Promise((resolve, reject) => {
@@ -162,12 +167,9 @@ export default class Vascular {
     });
   }
 
-  inboxNext(): Promise<Message[]> {
+  async inboxNext(): Promise<Message[]> {
     const request = new GetInboxMessagesRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setUserId(this.userId);
     request.setNext(this.next);
     request.setLangaugesList(this.languages);
@@ -191,12 +193,9 @@ export default class Vascular {
     });
   }
 
-  getMessageById(messageId: string): Promise<Message> {
+  async getMessageById(messageId: string): Promise<Message> {
     const request = new GetMessageByIdRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setUserId(this.userId);
     request.setMessageId(messageId);
 
@@ -212,12 +211,9 @@ export default class Vascular {
     });
   }
 
-  readMessages(messageIds: string[]): Promise<string> {
+  async readMessages(messageIds: string[]): Promise<string> {
     const request = new ChangeMessagesStateRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setIdsList(messageIds);
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
@@ -235,12 +231,9 @@ export default class Vascular {
     });
   }
 
-  openMessages(messageIds: string[]): Promise<string> {
+  async openMessages(messageIds: string[]): Promise<string> {
     const request = new ChangeMessagesStateRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setIdsList(messageIds);
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
@@ -258,12 +251,9 @@ export default class Vascular {
     });
   }
 
-  deleteMessage(messageId: string): Promise<string> {
+  async deleteMessage(messageId: string): Promise<string> {
     const request = new DeleteMessageRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setMessageId(messageId);
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
@@ -281,12 +271,9 @@ export default class Vascular {
     });
   }
 
-  addTags(tagNames: string[]): Promise<string> {
+  async addTags(tagNames: string[]): Promise<string> {
     const request = new AddTagsRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setUserId(this.userId);
     request.setNamesList(tagNames);
     return new Promise((resolve, reject) => {
@@ -309,10 +296,7 @@ export default class Vascular {
     if (uuids.length <= 0) return "Nothing to be deleted";
 
     const request = new DeleteTagsRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setUserId(this.userId);
     request.setUuidsList(uuids);
     return new Promise((resolve, reject) => {
@@ -326,12 +310,9 @@ export default class Vascular {
     });
   }
 
-  tags(): Promise<Tag[]> {
+  async tags(): Promise<Tag[]> {
     const request = new GetUserTagsRequest();
-    const metadata: Metadata = {
-      'app-key': this.appKey,
-      'api-key': this.apiKey
-    };
+    const metadata = await this.buildMetadata();
     request.setUserId(this.userId);
     return new Promise((resolve, reject) => {
       this.tagClient.getUserTags(

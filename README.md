@@ -30,6 +30,8 @@ const vascular = new Vascular({
 
 If `languages` is not provided, the SDK defaults to `Language.ENUK`.
 
+To verify requests against your own authentication system, pass a `getSessionToken` callback, the SDK calls it automatically before each request. See [Session token](#session-token).
+
 ## Usage
 
 All network operations are asynchronous and should be awaited.
@@ -355,3 +357,21 @@ campaign
 payment
 notification
 ```
+
+## Session token
+
+If your app requires per-request authentication, pass a `getSessionToken` callback when initializing the SDK. The SDK calls it before every request to get a fresh token, which is sent as a `session-token` metadata header.
+
+```ts
+const vascular = new Vascular({
+  apiKey: 'API_KEY',
+  appKey: 'APP_KEY',
+  userId: 'USER_ID',
+  endpoint: 'https://api.example.com',
+  getSessionToken: async () => {
+    return await yourAuthService.getValidToken();
+  },
+});
+```
+
+The callback is optional. When omitted, no `session-token` header is sent.

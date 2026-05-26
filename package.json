@@ -1,6 +1,6 @@
 {
   "name": "@vascular-io/vascular-js",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Vascular Javascript SDK",
   "main": "dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,7 +20,8 @@
     "build-dev": "tsc --project tsconfig.json && cp src/vascular/*.{js,d.ts} dist/vascular/",
     "build:watch": "nodemon --watch ./src --ext ts --exec tsc",
     "test:local": "node test/vascular.local-server.test.js",
-    "prepublishOnly": "npm pkg delete devDependencies && npm publish --access public && git checkout package.json"
+    "prepack": "npm pkg delete devDependencies",
+    "postpack": "git checkout package.json"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.7",

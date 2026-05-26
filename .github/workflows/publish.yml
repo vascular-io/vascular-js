@@ -35,7 +35,7 @@ jobs:
       - name: Install Task
         uses: arduino/setup-task@v2
 
-      - name: Generate grpc-web stubs
+      - name: Generate web stubs
         working-directory: ${{ env.CONTRACTS_PATH }}
         env:
           BUILDKIT_PROGRESS: quiet
