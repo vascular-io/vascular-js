@@ -1,3 +1,9 @@
+## [1.1.0] - 26 May 2026
+
+- Add custom auth
+Add support for custom authentication by allowing users to provide their own session token retrieval function.
+This enables integration with various authentication systems and enhances flexibility for developers using the SDK.
+
 ## [1.0.2] - 02 May 2026
 
 - Resolve pkgs vulnerabilities

@@ -32,7 +32,7 @@ jobs:
       - name: Install Task
         uses: arduino/setup-task@v2
 
-      - name: Generate grpc-web stubs
+      - name: Generate web stubs
         working-directory: ${{ env.CONTRACTS_PATH }}
         env:
           BUILDKIT_PROGRESS: quiet
@@ -40,6 +40,7 @@ jobs:
         run: |
           test -f Taskfile.yml
           task gen-web
+          task gen-web-types
 
       - name: Copy generated web stubs into package
         shell: bash
@@ -49,7 +50,17 @@ jobs:
           dest="src/vascular"
           test -d "$src"
           mkdir -p "$dest"
-          rsync -a --delete "${src}/" "${dest}/"
+          rsync -a --delete \
+            --include='*.ts' --include='*.js' --include='*.d.ts' \
+            --include='google/***' --include='types/***' \
+            --exclude='node_modules/***' \
+            "${src}/" "${dest}/"
+          echo "--- src/vascular ---"
+          ls src/vascular
+          echo "--- src/vascular/types ---"
+          ls src/vascular/types
+          echo "--- src/vascular/google ---"
+          ls -R src/vascular/google
 
       - name: Remove contracts from runner
         run: rm -rf "${CONTRACTS_PATH}"
@@ -68,4 +79,4 @@ jobs:
         run: npm run build
 
       - name: Publish dry-run (npm)
-        run: npm publish --dry-run --access public
+        run: npm publish --dry-run --access public --ignore-scripts
