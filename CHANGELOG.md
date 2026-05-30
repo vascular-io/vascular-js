@@ -1,3 +1,7 @@
+## [1.1.1] - 30 May 2026
+
+- Fix getMessageById response handling
+
 ## [1.1.0] - 26 May 2026
 
 - Add custom auth
