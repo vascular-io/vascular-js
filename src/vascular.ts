@@ -43,7 +43,7 @@ type Tag = {
   createdAt: string;
 };
 
-export enum Language { 
+export enum Language {
   ENUS = 0,
   ENUK = 1,
   NB = 2,
@@ -115,12 +115,12 @@ export default class Vascular {
           if (err) {
             reject(err.message);
           } else {
-             const object = response.toObject();
+            const object = response.toObject();
             resolve({
               userId: object.userId,
               inboxId: object.inboxId,
               metadata: object.metadata,
-          });
+            });
           }
         }
       );
@@ -204,8 +204,11 @@ export default class Vascular {
         request,
         metadata,
         (err, response: InboxMessage) => {
-          if (err) reject(err.message);
-          resolve(this.mapMessage(response));
+          if (err) {
+            reject(err.message);
+          } else {
+            resolve(this.mapMessage(response));
+          }
         }
       );
     });
@@ -361,7 +364,7 @@ export default class Vascular {
       const media = (image !== undefined || thumbnail !== undefined)
         ? { image, thumbnail }
         : undefined;
-      
+
       const subTitle = data.getSubTitle();
 
       messagesMap = Object.assign(
